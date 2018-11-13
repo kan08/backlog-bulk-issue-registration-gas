@@ -9,7 +9,7 @@ import {List} from "./List"
 import {Message} from "./resources"
 import {SpreadSheetService, SpreadSheetServiceImpl} from "./SpreadSheetService"
 
-const SCRIPT_VERSION = "v2.0.3"
+const SCRIPT_VERSION = "v2.0.5-SNAPSHOT"
 const TEMPLATE_SHEET_NAME = "Template"
 const ROW_HEADER_INDEX = 1
 const COLUMN_START_INDEX = 1 /** データ列の開始インデックス */
@@ -435,14 +435,20 @@ export const BacklogService = (spreadSheetService: SpreadSheetService): BacklogS
           currentColumnNumber++
         }
         // Data validation must be added after all column insert
+        let validationRuleIndex = 0
         for (let i = 0; i < definition.customFields.length; i++) {
           const customField = definition.customFields[i]
+          if (customField.typeId >= 6)
+            continue
           if (customField.typeId === 5) {
             definition.customFieldItemNames(customField).map(itemNames => {
-              const itemRule = SpreadsheetApp.newDataValidation().requireValueInList(itemNames, true).build()
-              templateSheet.getRange(2, i + customFieldStartColumnNumber, lastRowNumber).setDataValidation(itemRule)
+              if (itemNames.length > 0) {
+                const itemRule = SpreadsheetApp.newDataValidation().requireValueInList(itemNames, true).build()
+                templateSheet.getRange(2, validationRuleIndex + customFieldStartColumnNumber, lastRowNumber).setDataValidation(itemRule)
+              }
             })
           }
+          validationRuleIndex++
         }
         showMessage(getMessage("complete_init", spreadSheetService), spreadSheetService)
         return app.close()
